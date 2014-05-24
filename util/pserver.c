@@ -153,7 +153,7 @@ build_command(struct nw_queue *q, struct queue_job *j,
 	char *s = q->command;
 	char *target_end = target + target_size;
 
-	static void add_string(const char *str)
+	void add_string(const char *str)
 	{
 		int len = strlen(str);
 		if (target + len + 1 > target_end)

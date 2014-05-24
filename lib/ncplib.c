@@ -2421,7 +2421,7 @@ ncp_initialize_2(int *argc, char **argv, int login_necessary,
 	int i = 1;
 	NWCCODE nwerr;
 
-	static int get_argument(int arg_no, const char **target) {
+	int get_argument(int arg_no, const char **target) {
 		int count = 1;
 
 		if (target != NULL) {
