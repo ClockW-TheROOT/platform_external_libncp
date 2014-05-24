@@ -867,11 +867,11 @@ long
 #ifdef SWIG
 long
  ncp_read(NWCONN_HANDLE conn, const char fileHandle[6],
-	  __off_t offset, size_t count, char *RETBUFFER_LENPREV);
+	  off_t offset, size_t count, char *RETBUFFER_LENPREV);
 
 long
  ncp_write(NWCONN_HANDLE conn, const char fileHandle[6],
-	   __off_t offset, size_t IGNORE, const char *STRING_LENPREV);
+	   off_t offset, size_t IGNORE, const char *STRING_LENPREV);
 
 long
  ncp_copy_file(NWCONN_HANDLE conn,
@@ -884,11 +884,11 @@ long
 #else
 long
  ncp_read(NWCONN_HANDLE conn, const char fileHandle[6],
-	  __off_t offset, size_t count, char *target);
+	  off_t offset, size_t count, char *target);
 
 long
  ncp_write(NWCONN_HANDLE conn, const char fileHandle[6],
-	   __off_t offset, size_t count, const char *source);
+	   off_t offset, size_t count, const char *source);
 
 NWCCODE ncp_read64(NWCONN_HANDLE conn, const char fileHandle[6],
 		ncp_off64_t offset, size_t count, void *target, size_t *bytesread);
