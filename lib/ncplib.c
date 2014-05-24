@@ -193,6 +193,13 @@ int in_options = 2;
 int in_options = 0;
 #endif
 
+#if defined(ANDROID) || defined(__BIONIC__)
+/* function provided by util/getpass.c
+ * which is missing from the BIONIC libc
+ */
+char * getpass(const char *);
+#endif
+
 static ncpt_mutex_t conn_lock = NCPT_MUTEX_INITIALIZER;
 static LIST_HEAD(conn_list);
 ncpt_mutex_t nds_ring_lock = NCPT_MUTEX_INITIALIZER;
