@@ -359,11 +359,17 @@ main(int argc, char *argv[])
 		usage();
 		return -1;
 	}
+
 	realpath(argv[optind], mount_point);
 
-	if (stat(mount_point, &st) == -1)
+	if (chdir(mount_point))
 	{
-		errexit(31, _("Could not find mount point %s: %s\n"),
+		errexit(31, _("Could not change directory into mount target %s: %s\n"),
+			mount_point, strerror(errno));
+	}
+	if (stat(".", &st) == -1)
+	{
+		errexit(31, _("Mount point %s does not exist: %s\n"),
 			mount_point, strerror(errno));
 	}
 	if (mount_ok(&st) != 0)
@@ -714,7 +720,9 @@ ncpipx:;
 	ncp_close(conn);
 
 	if (!opt_n) {
+		block_sigs();
 		add_mnt_entry(mount_name, mount_point, info.flags);
+		unblock_sigs();
 	}
 	return 0;
 }

@@ -360,7 +360,7 @@ void verify_argv(int argc, char* argv[]) {
 #endif 
 
 static inline int ncpm_suser(void) {
-	return setreuid(-1, 0);
+	return setresuid(0, 0, myuid);
 }
 
 static int ncpm_normal(void) {
@@ -368,9 +368,29 @@ static int ncpm_normal(void) {
 	int v;
 
 	e = errno;
-	v = setreuid(-1, myuid);
+	v = setresuid(myuid, myuid, 0);
 	errno = e;
 	return v;
+}
+
+void block_sigs(void) {
+
+	sigset_t mask, orig_mask;
+	sigfillset(&mask);
+
+	if(sigprocmask(SIG_SETMASK, &mask, &orig_mask) < 0) {
+		errexit(-1, _("Blocking signals failed.\n"));
+	}
+}
+
+void unblock_sigs(void) {
+
+	sigset_t mask, orig_mask;
+	sigemptyset(&mask);
+
+	if (sigprocmask(SIG_SETMASK, &mask, &orig_mask) < 0) {
+		errexit(-1, _("Un-blocking signals failed.\n"));
+	}
 }
 
 static int proc_ncpm_mount(const char* source, const char* target, const char* filesystem, unsigned long mountflags, const void* data) {
@@ -444,7 +464,7 @@ static int ncp_mount_v2(const char* mount_name, unsigned long flags, const struc
 	}
         datav2.file_mode   = data->file_mode;
         datav2.dir_mode    = data->dir_mode;
-	err = proc_ncpm_mount(mount_name, data->mount_point, "ncpfs", flags, (void*) &datav2);
+	err = proc_ncpm_mount(mount_name, ".", "ncpfs", flags, (void*) &datav2);
 	if (err)
 		return errno;
 	return 0;
@@ -508,7 +528,7 @@ static int ncp_mount_v3(const char* mount_name, unsigned long flags, const struc
 		exit(0);	/* Should not return from process_connection */
 	}
 	close(pp[0]);
-	err=proc_ncpm_mount(mount_name, data->mount_point, "ncpfs", flags, (void*) &datav3);
+	err=proc_ncpm_mount(mount_name, ".", "ncpfs", flags, (void*) &datav3);
 	if (err) {
 		err = errno;
 		/* Mount unsuccesful so we have to kill daemon */
@@ -559,7 +579,7 @@ static int ncp_mount_v4(const char* mount_name, unsigned long flags, struct ncp_
 		sprintf(mountopts, "version=%u,flags=%u,owner=%u,uid=%u,gid=%u,mode=%u,dirmode=%u,timeout=%u,retry=%u,wdogpid=%u,ncpfd=%u,infofd=%u",
 			NCP_MOUNT_VERSION_V5, ncpflags, data->mounted_uid, data->uid, data->gid, data->file_mode,
 			data->dir_mode, data->time_out, data->retry_count, wdog_pid, data->ncp_fd, pp[1]);
-		err=proc_ncpm_mount(mount_name, data->mount_point, "ncpfs", flags, mountopts);
+		err=proc_ncpm_mount(mount_name, ".", "ncpfs", flags, mountopts);
 	} else {
 		err=-1;
 	}
@@ -577,7 +597,7 @@ static int ncp_mount_v4(const char* mount_name, unsigned long flags, struct ncp_
 	        datav4.file_mode   = data->file_mode;
         	datav4.dir_mode    = data->dir_mode;
 		datav4.wdog_pid	   = wdog_pid;
-		err = proc_ncpm_mount(mount_name, data->mount_point, "ncpfs", flags, (void*)&datav4);
+		err = proc_ncpm_mount(mount_name, ".", "ncpfs", flags, (void*)&datav4);
 		if (err) {
 			err = errno;
 			/* Mount unsuccesful so we have to kill daemon */
@@ -1395,6 +1415,17 @@ process_connection (const struct ncp_mount_data_independent* mnt, int pipe_fd)
 }
 #endif /* MOUNT3 */
 
+static int check_name(const char *name)
+{
+	char *s;
+	for (s = "\n\t\\"; *s; s++) {
+		if (strchr(name, *s)) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
 static const struct smntflags {
 	unsigned int	flag;
 	const char*	name;
@@ -1415,6 +1446,9 @@ void add_mnt_entry(char* mount_name, char* mpnt, unsigned long flags) {
 	struct mntent ment;
 	int fd;
 	FILE* mtab;
+
+	if (check_name(mount_name) == -1 || check_name(mpnt) == -1)
+		errexit(107, _("Illegal character in mount entry\n"));
 
 	ment.mnt_fsname = mount_name;
 	ment.mnt_dir = mpnt;

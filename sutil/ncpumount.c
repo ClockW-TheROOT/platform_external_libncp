@@ -70,12 +70,23 @@
 #include <mntent.h>
 #include <pwd.h>
 
+#include <sched.h>
+
 #include "private/libintl.h"
 
 #define _(X) X
 
+#ifndef MS_REC
+#define MS_REC 16384
+#endif
+#ifndef MS_SLAVE
+#define MS_SLAVE (1<<19)
+#endif
+
 static char *progname;
 static int is_ncplogout = 0;
+
+uid_t uid;
 
 static void
 usage(void)
@@ -115,6 +126,40 @@ static void eprintf(const char* message, ...) {
 	va_start(ap, message);
 	veprintf(message, ap);
 	va_end(ap);
+}
+
+/* Mostly copied from ncpm_common.c */
+void block_sigs(void) {
+
+	sigset_t mask, orig_mask;
+	sigfillset(&mask);
+	sigdelset(&mask, SIGALRM); /* Need SIGALRM for ncpumount */
+
+	if(setresuid(0, 0, uid) < 0) {
+		eprintf("Failed to raise privileges.\n");
+		exit(-1);
+	}
+
+	if(sigprocmask(SIG_SETMASK, &mask, &orig_mask) < 0) {
+		eprintf("Blocking signals failed.\n");
+		exit(-1);
+	}
+}
+
+void unblock_sigs(void) {
+
+	sigset_t mask, orig_mask;
+	sigemptyset(&mask);
+
+	if(setresuid(uid, uid, 0) < 0) {
+		eprintf("Failed to drop privileges.\n");
+		exit(-1);
+	}
+
+	if(sigprocmask(SIG_SETMASK, &mask, &orig_mask) < 0) {
+		eprintf("Un-blocking signals failed.\n");
+		exit(-1);
+	}
 }
 
 static void alarmSignal(int sig) {
@@ -192,10 +237,13 @@ static int clearMtab (const char* mount_points[], unsigned int numEntries) {
 	if (!numEntries)
 		return 0; /* don't waste time ! */
 
+	block_sigs();
+
 	while ((fd = open(MOUNTED "~", O_RDWR | O_CREAT | O_EXCL, 0600)) == -1) {
 		struct timespec tm;
 
 		if (errno != EEXIST || retries == 0) {
+			unblock_sigs();
 			eprintf(_("Can't get %s~ lock file: %s\n"), MOUNTED, strerror(errno));
 			return 1;
 		}
@@ -206,6 +254,7 @@ static int clearMtab (const char* mount_points[], unsigned int numEntries) {
 			alarm(0);
 			close(fd);
 			if (err) {
+				unblock_sigs();
 				eprintf(_("Can't lock lock file %s~: %s\n"), MOUNTED, _("Lock timed out"));
 				return 1;
 			}
@@ -223,10 +272,188 @@ static int clearMtab (const char* mount_points[], unsigned int numEntries) {
 	err = __clearMtab(mount_points, numEntries);
 
 	if ((unlink(MOUNTED "~") == -1) && (err == 0)){
+		unblock_sigs();
 		eprintf(_("Can't remove %s~"), MOUNTED);
 		return 1;
 	}
+	unblock_sigs();
 	return err;
+}
+
+
+int ncp_mnt_umount(const char *abs_mnt, const char *rel_mnt)
+{
+	if (umount(rel_mnt) != 0) {
+		eprintf(_("Could not umount %s: %s\n"),
+			abs_mnt, strerror(errno));
+		return -1;
+	}
+	return 0;
+}
+
+
+static int check_is_mount_child(void *p)
+{
+	const char **a = p;
+	const char *last = a[0];
+	const char *mnt = a[1];
+	int res;
+	const char *procmounts = "/proc/mounts";
+	int found;
+	FILE *fp;
+	struct mntent *entp;
+
+	res = mount("", "/", "", MS_SLAVE | MS_REC, NULL);
+	if (res == -1) {
+		eprintf(_("Failed to mark mounts slave: %s\n"),
+			strerror(errno));
+		return 1;
+	}
+
+	res = mount(".", "/tmp", "", MS_BIND | MS_REC, NULL);
+	if (res == -1) {
+		eprintf(_("Failed to bind parent to /tmp: %s\n"),
+			strerror(errno));
+		return 1;
+	}
+
+	fp = setmntent(procmounts, "r");
+	if (fp == NULL) {
+		eprintf(_("Failed to open %s: %s\n"),
+			procmounts, strerror(errno));
+		return 1;
+	}
+
+	found = 0;
+	while ((entp = getmntent(fp)) != NULL) {
+		if (strncmp(entp->mnt_dir, "/tmp/", 5) == 0 &&
+		    strcmp(entp->mnt_dir + 5, last) == 0) {
+			found = 1;
+			break;
+		}
+	}
+	endmntent(fp);
+
+	if (!found) {
+		eprintf(_("%s not mounted\n"), mnt);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+static int check_is_mount(const char *last, const char *mnt)
+{
+	char buf[131072];
+	pid_t pid, p;
+	int status;
+	const char *a[2] = { last, mnt };
+
+	pid = clone(check_is_mount_child, buf + 65536, CLONE_NEWNS, (void *) a);
+	if (pid == (pid_t) -1) {
+		eprintf(_("Failed to clone namespace: %s\n"),
+			strerror(errno));
+		return -1;
+	}
+	p = waitpid(pid, &status, __WCLONE);
+	if (p == (pid_t) -1) {
+		eprintf(_("Waitpid failed: %s\n"),
+			strerror(errno));
+		return -1;
+	}
+	if (!WIFEXITED(status)) {
+		eprintf(_("Child terminated abnormally (status %i)\n"),
+			status);
+		return -1;
+	}
+	if (WEXITSTATUS(status) != 0)
+		return -1;
+
+	return 0;
+}
+
+
+static int chdir_to_parent(char *copy, const char **lastp, int *currdir_fd)
+{
+	char *tmp;
+	const char *parent;
+	char buf[PATH_MAX];
+	int res;
+
+	tmp = strrchr(copy, '/');
+	if (tmp == NULL || tmp[1] == '\0') {
+		eprintf(_("Internal error: invalid abs path: <%s>\n"),
+			copy);
+		return -1;
+	}
+	if (tmp != copy) {
+		*tmp = '\0';
+		parent = copy;
+		*lastp = tmp + 1;
+	} else if (tmp[1] != '\0') {
+		*lastp = tmp + 1;
+		parent = "/";
+	} else {
+		*lastp = ".";
+		parent = "/";
+	}
+	*currdir_fd = open(".", O_RDONLY);
+	if (*currdir_fd == -1) {
+		eprintf(_("Failed to open current directory: %s\n"),
+			strerror(errno));
+		return -1;
+	}
+	res = chdir(parent);
+	if (res == -1) {
+		eprintf(_("Failed to chdir to %s: %s\n"),
+			parent, strerror(errno));
+		return -1;
+	}
+	if (getcwd(buf, sizeof(buf)) == NULL) {
+		eprintf(_("Failed to obtain current directory: %s\n"),
+			strerror(errno));
+		return -1;
+	}
+	if (strcmp(buf, parent) != 0) {
+		eprintf(_("Mountpoint moved (%s -> %s)\n"),
+			parent, buf);
+		return -1;
+
+	}
+
+	return 0;
+}
+
+
+static int unmount_ncp(const char *mount_point)
+{
+	int currdir_fd = -1;
+	char *copy;
+	const char *last;
+	int res;
+
+	copy = strdup(mount_point);
+	if (copy == NULL) {
+		eprintf(_("Failed to allocate memory\n"));
+		return -1;
+	}
+	res = chdir_to_parent(copy, &last, &currdir_fd);
+	if (res == -1)
+		goto out;
+	res = check_is_mount(last, mount_point);
+	if (res == -1)
+		goto out;
+	res = ncp_mnt_umount(mount_point, last);
+
+out:
+	free(copy);
+	if (currdir_fd != -1) {
+		fchdir(currdir_fd);
+		close(currdir_fd);
+	}
+
+	return res;
 }
 
 static int
@@ -234,15 +461,16 @@ do_umount(const char *mount_point)
 {
 	int fid = open(mount_point, O_RDONLY, 0);
 	uid_t mount_uid;
+	int res;
 
 	if (fid == -1) {
-		eprintf(_("Could not open %s: %s\n"),
-			mount_point, strerror(errno));
+		eprintf(_("Invalid or unauthorized mountpoint %s\n"),
+			mount_point);
 		return -1;
 	}
 	if (ncp_get_mount_uid(fid, &mount_uid) != 0) {
 		close(fid);
-		eprintf(_("%s probably not ncp-filesystem\n"),
+		eprintf(_("Invalid or unauthorized mountpoint %s\n"),
 			mount_point);
 		return -1;
 	}
@@ -253,12 +481,8 @@ do_umount(const char *mount_point)
 		return -1;
 	}
 	close(fid);
-	if (umount(mount_point) != 0) {
-		eprintf(_("Could not umount %s: %s\n"),
-			mount_point, strerror(errno));
-		return -1;
-	}
-	return 0;
+	res = unmount_ncp(mount_point);
+	return res;
 }
 
 
@@ -409,7 +633,8 @@ main(int argc, char *argv[])
 	int allConns = 0;
 	const char *serverName = NULL;
 	const char *treeName = NULL;
-	uid_t uid = getuid();
+	
+	uid = getuid();
 
 	progname = strrchr(argv[0], '/');
 	if (progname) {

@@ -934,7 +934,9 @@ ncpipx:;
 	NWDSFreeContext(ctx);
 	/* ncpmap, ncplogin must write in /etc/mtab */
 	{
+		block_sigs();
 		add_mnt_entry(mount_name, mount_point, info.flags);
+		unblock_sigs();
 	}
 	free(mount_name);
 	if (info.echo_mnt_pnt) {

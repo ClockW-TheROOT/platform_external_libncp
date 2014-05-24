@@ -121,6 +121,9 @@ int proc_buildconn(struct ncp_mount_info* info);
 int proc_aftermount(const struct ncp_mount_info* info, NWCONN_HANDLE* conn);
 int proc_ncpm_umount(const char* dir);
 
+void block_sigs(void);
+void unblock_sigs(void);
+
 #define UNUSED(x)	x __attribute__((unused))
 
 #endif	/* __NCPM_COMMON_H__ */
