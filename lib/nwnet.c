@@ -135,6 +135,14 @@
 #include "cfgfile.h"
 #include "ncp/nwclient.h"
 
+#if defined(ANDROID) || defined(__BIONIC__)
+/* wcsdup is exported as global symbol
+ * in the BIONIC libc, but not declared
+ * in the headers.
+ */
+wchar_t* wcsdup(const wchar_t*);
+#endif
+
 static const char wchar_init[] = "WCHAR_T//";
 static const char* wchar_encoding = wchar_init;
 static const char* default_encoding = NULL;
