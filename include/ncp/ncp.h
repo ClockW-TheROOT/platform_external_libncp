@@ -95,7 +95,7 @@ struct prop_net_address {
 #ifdef SWIG
 	fixedArray node[IPX_NODE_LEN];
 #else
-	u_int8_t node[IPX_NODE_LEN] __attribute__((packed));
+	u_int8_t node[IPX_NODE_LEN];
 #endif
 	u_int16_t port __attribute__((packed));
 };
@@ -163,20 +163,20 @@ struct nw_queue_job_entry {
 	u_int32_t ClientTask __attribute__((packed));
 	u_int32_t ClientObjectID __attribute__((packed));
 	u_int32_t TargetServerID __attribute__((packed));
-	u_int8_t TargetExecTime[6] __attribute__((packed));
-	u_int8_t JobEntryTime[6] __attribute__((packed));
+	u_int8_t TargetExecTime[6];
+	u_int8_t JobEntryTime[6];
 	u_int32_t JobNumber __attribute__((packed));
 	u_int16_t JobType __attribute__((packed));
 	u_int16_t JobPosition __attribute__((packed));
 	u_int16_t JobControlFlags __attribute__((packed));
-	u_int8_t FileNameLen __attribute__((packed));
-	char JobFileName[13] __attribute__((packed));
+	u_int8_t FileNameLen;
+	char JobFileName[13];
 	u_int32_t JobFileHandle __attribute__((packed));
 	u_int32_t ServerStation __attribute__((packed));
 	u_int32_t ServerTaskNumber __attribute__((packed));
 	u_int32_t ServerObjectID __attribute__((packed));
-	char JobTextDescription[50] __attribute__((packed));
-	char ClientRecordArea[152] __attribute__((packed));
+	char JobTextDescription[50];
+	char ClientRecordArea[152];
 };
 
 struct queue_job {
@@ -217,18 +217,18 @@ struct print_job_record {
 };
 #else
 struct print_job_record {
-	u_int8_t Version __attribute__((packed));
-	u_int8_t TabSize __attribute__((packed));
+	u_int8_t Version;
+	u_int8_t TabSize;
 	u_int16_t Copies __attribute__((packed));
 	u_int16_t CtrlFlags __attribute__((packed));
 	u_int16_t Lines __attribute__((packed));
 	u_int16_t Rows __attribute__((packed));
-	char FormName[16] __attribute__((packed));
-	u_int8_t Reserved[6] __attribute__((packed));
-	char BannerName[13] __attribute__((packed));
-	char FnameBanner[13] __attribute__((packed));
-	char FnameHeader[14] __attribute__((packed));
-	char Path[80] __attribute__((packed));
+	char FormName[16];
+	u_int8_t Reserved[6];
+	char BannerName[13];
+	char FnameBanner[13];
+	char FnameHeader[14];
+	char Path[80];
 };
 #endif
 

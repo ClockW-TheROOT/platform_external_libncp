@@ -53,12 +53,12 @@
 
 struct ncp_request_header {
 	u_int16_t type __attribute__((packed));
-	u_int8_t  sequence __attribute__((packed));
-	u_int8_t  conn_low __attribute__((packed));
-	u_int8_t  task __attribute__((packed));
-	u_int8_t  conn_high __attribute__((packed));
-	u_int8_t  function __attribute__((packed));
-	u_int8_t  data[0] __attribute__((packed));
+	u_int8_t  sequence;
+	u_int8_t  conn_low;
+	u_int8_t  task;
+	u_int8_t  conn_high;
+	u_int8_t  function;
+	u_int8_t  data[0];
 };
 
 #define NCP_REPLY                (0x3333)
@@ -66,13 +66,13 @@ struct ncp_request_header {
 
 struct ncp_reply_header {
 	u_int16_t type __attribute__((packed));
-	u_int8_t sequence __attribute__((packed));
-	u_int8_t conn_low __attribute__((packed));
-	u_int8_t task __attribute__((packed));
-	u_int8_t conn_high __attribute__((packed));
-	u_int8_t completion_code __attribute__((packed));
-	u_int8_t connection_state __attribute__((packed));
-	u_int8_t data[0] __attribute__((packed));
+	u_int8_t sequence;
+	u_int8_t conn_low;
+	u_int8_t task;
+	u_int8_t conn_high;
+	u_int8_t completion_code;
+	u_int8_t connection_state;
+	u_int8_t data[0];
 };
 
 #define NCP_VOLNAME_LEN (16)
@@ -230,8 +230,8 @@ struct nw_info_struct {
 	u_int32_t EAKeyCount __attribute__((packed));
 	u_int32_t EAKeySize __attribute__((packed));
 	u_int32_t NSCreator __attribute__((packed));
-	u_int8_t nameLen __attribute__((packed));
-	u_int8_t entryName[256] __attribute__((packed));
+	u_int8_t nameLen;
+	u_int8_t entryName[256];
 };
 #endif
 
@@ -282,13 +282,13 @@ struct nw_file_info {
 	int opened;
 	int access;
 	u_int32_t server_file_handle __attribute__((packed));
-	u_int8_t open_create_action __attribute__((packed));
-	u_int8_t file_handle[6] __attribute__((packed));
+	u_int8_t open_create_action;
+	u_int8_t file_handle[6];
 };
 #endif
 
 struct nw_search_sequence {
-	u_int8_t volNumber __attribute__((packed));
+	u_int8_t volNumber;
 	u_int32_t dirBase __attribute__((packed));
 	u_int32_t sequence __attribute__((packed));
 };

@@ -2584,13 +2584,13 @@ ncp_request(struct ncp_conn *conn, int function)
 
 struct nw_time_buffer
 {
-	u_int8_t year __attribute__((packed));
-	u_int8_t month __attribute__((packed));
-	u_int8_t day __attribute__((packed));
-	u_int8_t hour __attribute__((packed));
-	u_int8_t minute __attribute__((packed));
-	u_int8_t second __attribute__((packed));
-	u_int8_t wday __attribute__((packed));
+	u_int8_t year;
+	u_int8_t month;
+	u_int8_t day;
+	u_int8_t hour;
+	u_int8_t minute;
+	u_int8_t second;
+	u_int8_t wday;
 };
 
 static time_t

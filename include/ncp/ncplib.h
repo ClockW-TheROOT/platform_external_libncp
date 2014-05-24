@@ -462,24 +462,24 @@ struct ncp_file_server_info
 #else
 struct ncp_file_server_info
 {
-	u_int8_t ServerName[48] __attribute__((packed));
-	u_int8_t FileServiceVersion __attribute__((packed));
-	u_int8_t FileServiceSubVersion __attribute__((packed));
+	u_int8_t ServerName[48];
+	u_int8_t FileServiceVersion;
+	u_int8_t FileServiceSubVersion;
 	u_int16_t MaximumServiceConnections __attribute__((packed));
 	u_int16_t ConnectionsInUse __attribute__((packed));
 	u_int16_t NumberMountedVolumes __attribute__((packed));
-	u_int8_t Revision __attribute__((packed));
-	u_int8_t SFTLevel __attribute__((packed));
-	u_int8_t TTSLevel __attribute__((packed));
+	u_int8_t Revision;
+	u_int8_t SFTLevel;
+	u_int8_t TTSLevel;
 	u_int16_t MaxConnectionsEverUsed __attribute__((packed));
-	u_int8_t AccountVersion __attribute__((packed));
-	u_int8_t VAPVersion __attribute__((packed));
-	u_int8_t QueueVersion __attribute__((packed));
-	u_int8_t PrintVersion __attribute__((packed));
-	u_int8_t VirtualConsoleVersion __attribute__((packed));
-	u_int8_t RestrictionLevel __attribute__((packed));
-	u_int8_t InternetBridge __attribute__((packed));
-	u_int8_t Reserved[60] __attribute__((packed));
+	u_int8_t AccountVersion;
+	u_int8_t VAPVersion;
+	u_int8_t QueueVersion;
+	u_int8_t PrintVersion;
+	u_int8_t VirtualConsoleVersion;
+	u_int8_t RestrictionLevel;
+	u_int8_t InternetBridge;
+	u_int8_t Reserved[60];
 };
 #endif
 
@@ -592,7 +592,7 @@ struct ncp_station_addr
 #ifdef SWIG
 	fixedArray Node[6];
 #else
-	u_int8_t Node[6] __attribute__((packed));
+	u_int8_t Node[6];
 #endif
 	u_int16_t Socket __attribute__((packed));
 };
@@ -602,32 +602,32 @@ struct ncp_prop_login_control
 #ifdef SWIG
 	fixedArray AccountExpireDate[3];
 #else
-	u_int8_t AccountExpireDate[3] __attribute__((packed));
+	u_int8_t AccountExpireDate[3];
 #endif	
-	u_int8_t Disabled __attribute__((packed));
+	u_int8_t Disabled;
 #ifdef SWIG
 	fixedArray PasswordExpireDate[3];
 #else	
-	u_int8_t PasswordExpireDate[3] __attribute__((packed));
+	u_int8_t PasswordExpireDate[3];
 #endif	
-	u_int8_t GraceLogins __attribute__((packed));
+	u_int8_t GraceLogins;
 	u_int16_t PasswordExpireInterval __attribute__((packed));
-	u_int8_t MaxGraceLogins __attribute__((packed));
-	u_int8_t MinPasswordLength __attribute__((packed));
+	u_int8_t MaxGraceLogins;
+	u_int8_t MinPasswordLength;
 	u_int16_t MaxConnections __attribute__((packed));
 #ifdef SWIG
 	fixedArray ConnectionTimeMask[42] __attribute__((packed));
 	fixedArray LastLogin[6] __attribute__((packed));
 #else	
-	u_int8_t ConnectionTimeMask[42] __attribute__((packed));
-	u_int8_t LastLogin[6] __attribute__((packed));
+	u_int8_t ConnectionTimeMask[42];
+	u_int8_t LastLogin[6];
 #endif	
-	u_int8_t RestrictionMask __attribute__((packed));
-	u_int8_t reserved __attribute__((packed));
+	u_int8_t RestrictionMask;
+	u_int8_t reserved;
 	u_int32_t MaxDiskUsage __attribute__((packed));
 	u_int16_t BadLoginCount __attribute__((packed));
 	u_int32_t BadLoginCountDown __attribute__((packed));
-	struct ncp_station_addr LastIntruder __attribute__((packed));
+	struct ncp_station_addr LastIntruder;
 };
 
 NWCCODE NWReadPropertyValue(NWCONN_HANDLE conn, const char *objName,

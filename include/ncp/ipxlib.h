@@ -64,12 +64,12 @@ struct sap_query
 struct sap_server_ident
 {
 	u_int16_t	server_type __attribute__((packed));
-	char		server_name[48] __attribute__((packed));
+	char		server_name[48];
 	IPXNet		server_network __attribute__((packed));
 #ifdef SWIG
 	u_int8_t	server_node[6] __attribute__((packed));
 #else
-	IPXNode		server_node __attribute__((packed));
+	IPXNode		server_node;
 #endif
 	IPXPort		server_port __attribute__((packed));
 	u_int16_t	intermediate_network __attribute__((packed));
@@ -87,7 +87,7 @@ struct ipx_rt_def {
 struct ipx_rip_packet
 {
 	u_int16_t		operation __attribute__((packed));
-	struct ipx_rt_def	rt[1] __attribute__((packed));
+	struct ipx_rt_def	rt[1];
 };
 
 #ifdef SWIG

@@ -63,8 +63,8 @@
 /* we are doing EthernetII... Any objections? */
 struct {
 	u_int16_t	unknown	__attribute__((packed));
-	u_int8_t	dst[6]	__attribute__((packed));
-	u_int8_t	src[6]	__attribute__((packed));
+	u_int8_t	dst[6];
+	u_int8_t	src[6];
 	u_int16_t	type	__attribute__((packed));
 	u_int8_t	ipx[16384];
 	} buffer;
