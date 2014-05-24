@@ -1,0 +1,24 @@
+#!/bin/sh
+SECURITY=`nwbpvalues $* -c | head -3 | tail -1`
+WRITE=`echo $SECURITY | cut -b1`
+READ=`echo $SECURITY | cut -b2`
+
+function print_sec () {
+	 case "$1" in
+	   0 ) echo "Everyone"
+	       ;;
+	   1 ) echo "Logged in"
+	       ;;
+	   2 ) echo "Object"
+	       ;;
+	   3 ) echo "Supervisor"
+	       ;;
+	   * ) echo "Bindery"
+	       ;;
+	 esac
+}
+
+echo -n "Write security: "
+print_sec $WRITE
+echo -n "Read security : "
+print_sec $READ

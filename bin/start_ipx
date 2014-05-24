@@ -1,0 +1,7 @@
+#!/bin/sh
+#
+# abcd is my ipx network number and 1234 my server's internal network number.
+# 00001b038b11 is the server's node number.
+#
+ipx_interface add -p eth0 EtherII 1234
+ipx_route add 10 1234 00001b039949
